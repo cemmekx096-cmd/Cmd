@@ -1,0 +1,30 @@
+name: Cleanup Projects
+
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  clean-all:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Failed Workflow Runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh run list --status failure --json databaseId -q '.[].databaseId' | \
+          while read run_id; do
+            echo "Deleting run: $run_id"
+            gh run delete $run_id || true
+          done
+
+      - name: Delete All Caches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          echo "Deleting all caches..."
+          gh cache delete --all --succeed-on-no-caches

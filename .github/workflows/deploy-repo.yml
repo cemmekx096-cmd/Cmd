@@ -1,0 +1,80 @@
+name: Deploy to Repo
+
+# Trigger: After successful build or manual
+on:
+  repository_dispatch:
+    types: [deploy-extensions]
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build All Extensions"]
+    types:
+      - completed
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy Extensions to Repo
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
+    
+    steps:
+      - name: Checkout extensions source
+        uses: actions/checkout@v4
+        with:
+          path: extensions
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: all-extensions
+          path: apk-files
+      
+      - name: Organize APKs
+        run: |
+          python extensions/.github/scripts/move-apks.py
+      
+      - name: Generate index.min.json
+        run: |
+          cd extensions
+          python .github/scripts/generate-index.py ../apk-files ../repo-output
+      
+      - name: Checkout distribution repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/my-anime-repo
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: main
+          path: anime-repo
+      
+      - name: Update distribution repo
+        run: |
+          # Copy APKs and index to repo
+          mkdir -p anime-repo/repo/apk
+          cp apk-files/*.apk anime-repo/repo/apk/ || true
+          cp repo-output/index.min.json anime-repo/repo/ || true
+          
+          cd anime-repo
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update extensions - Build #${{ github.run_number }}"
+      
+      - name: Push to distribution repo
+        run: |
+          cd anime-repo
+          git push origin main
+      
+      - name: Create release tag
+        if: success()
+        run: |
+          cd anime-repo
+          TAG="release-$(date +%Y%m%d-%H%M%S)"
+          git tag $TAG
+          git push origin $TAG
+          echo "Created release tag: $TAG"
