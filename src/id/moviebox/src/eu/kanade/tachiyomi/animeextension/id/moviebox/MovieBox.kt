@@ -9,7 +9,6 @@ import eu.kanade.tachiyomi.animesource.model.Track
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -297,7 +296,7 @@ class MovieBox : AnimeHttpSource() {
 
     // Ambil subtitle -- butuh id+format dari stream pertama + subjectId dari
     // episode (bukan dari objek stream), mirror dari alur "caption" di CloudStream.
-    private fun fetchSubtitles(streams: JsonArray, subjectId: String?, referer: String): List<Track> {
+    private fun fetchSubtitles(streams: List<kotlinx.serialization.json.JsonElement>, subjectId: String?, referer: String): List<Track> {
         val first = streams.firstOrNull()?.jsonObject ?: return emptyList()
         val id = first["id"]?.jsonPrimitive?.content ?: return emptyList()
         val format = first["format"]?.jsonPrimitive?.content ?: return emptyList()
