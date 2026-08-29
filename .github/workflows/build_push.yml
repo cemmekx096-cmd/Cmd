@@ -32,6 +32,8 @@ jobs:
       latestCommitMessage: ${{ steps.set-env.outputs.LATEST_COMMIT_MESSAGE }}
       matrix: ${{ steps.generate-matrices.outputs.matrix }}
       delete: ${{ steps.generate-matrices.outputs.delete }}
+      keystoreBase64: ${{ steps.signing.outputs.keystore_base64 }}
+      signingKeyFingerprint: ${{ steps.signing.outputs.signing_key_fingerprint }}
     steps:
       - name: Checkout ${{ github.ref_name }} branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
@@ -98,6 +100,20 @@ jobs:
         run: |
           python ./.github/scripts/generate-build-matrices.py ${{ steps.last_successful_ci_commit.outputs.base }} Release
 
+      # Keystore self-signed di-generate SEKALI di sini (bukan di tiap job build),
+      # supaya semua extension yang dibuild di matrix chunk manapun ditandatangani
+      # pakai key yang SAMA -> signingKeyFingerprint konsisten buat semua APK.
+      - id: signing
+        name: Generate signing key
+        run: |
+          keytool -genkeypair -v -keystore signingkey.jks -storetype JKS \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias testkey -storepass testpass123 -keypass testpass123 \
+            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=ID"
+          echo "keystore_base64=$(base64 -w0 signingkey.jks)" >> "$GITHUB_OUTPUT"
+          FP=$(keytool -exportcert -alias testkey -keystore signingkey.jks -storepass testpass123 | sha256sum | cut -d' ' -f1)
+          echo "signing_key_fingerprint=$FP" >> "$GITHUB_OUTPUT"
+
   build:
     name: Build extensions (${{ matrix.chunk.number }})
     needs: prepare
@@ -131,10 +147,7 @@ jobs:
       # mungkin perlu uninstall versi lama dulu.
       - name: Prepare signing key
         run: |
-          keytool -genkeypair -v -keystore signingkey.jks -storetype JKS \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias testkey -storepass testpass123 -keypass testpass123 \
-            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=ID"
+          echo "${{ needs.prepare.outputs.keystoreBase64 }}" | base64 -d > signingkey.jks
           chmod 600 signingkey.jks
 
       - name: Make gradlew executable
@@ -204,6 +217,30 @@ jobs:
           ref: build
           token: ${{ secrets.GITHUB_TOKEN }}
           path: repo
+
+      - name: Ensure repo index exists (first run)
+        run: |
+          if [ ! -f repo/index.min.json ]; then
+            echo "[]" > repo/index.min.json
+            echo "index.min.json belum ada, dibikin kosong dulu"
+          fi
+          if [ ! -f repo/index.json ]; then
+            echo "[]" > repo/index.json
+            echo "index.json belum ada, dibikin kosong dulu"
+          fi
+
+      - name: Write repo.json
+        run: |
+          cat > repo/repo.json << EOF
+          {
+            "meta": {
+              "name": "Cmd",
+              "shortName": "Cmd",
+              "website": "https://github.com/${{ github.repository }}",
+              "signingKeyFingerprint": "${{ needs.prepare.outputs.signingKeyFingerprint }}"
+            }
+          }
+          EOF
 
       - name: Merge repo
         run: |
