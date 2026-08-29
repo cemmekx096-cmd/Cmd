@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Aniyomi: MovieBox",
+    "pkg": "eu.kanade.tachiyomi.animeextension.id.moviebox",
+    "apk": "aniyomi-id.moviebox-v14.1.apk",
+    "lang": "id",
+    "code": 1,
+    "version": "14.1",
+    "nsfw": 0,
+    "sources": [
+      {
+        "name": "MovieBox",
+        "lang": "id",
+        "id": "1247564994274749819",
+        "baseUrl": "https://moviebox.ph"
+      }
+    ]
+  }
+]
