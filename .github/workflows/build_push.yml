@@ -122,19 +122,29 @@ jobs:
         with:
           cache-read-only: ${{ matrix.chunk.number > 1 }}
 
+      # --- Signing key: DI-GENERATE SENDIRI, gak pakai secrets.SIGNING_KEY ---
+      # Ini kepakai supaya build gak butuh secret SIGNING_KEY/ALIAS/dll di repo baru.
+      # Konsekuensi: keystore beda tiap kali workflow ini jalan ulang dari awal
+      # (kalau job ini di-rerun dalam 1 run yang sama, keystore-nya sama karena
+      # cuma di-generate sekali per run) -- APK antar RUN yang beda gak akan
+      # ke-anggap "update" yang valid oleh Android, jadi kalau install ulang di HP,
+      # mungkin perlu uninstall versi lama dulu.
       - name: Prepare signing key
         run: |
-          echo ${{ secrets.SIGNING_KEY }} | base64 -d > signingkey.jks
+          keytool -genkeypair -v -keystore signingkey.jks -storetype JKS \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias testkey -storepass testpass123 -keypass testpass123 \
+            -dname "CN=Test, OU=Test, O=Test, L=Test, S=Test, C=ID"
           chmod 600 signingkey.jks
-          
+
       - name: Make gradlew executable
         run: chmod +x gradlew
 
       - name: Build extensions (${{ matrix.chunk.number }})
         env:
-          ALIAS: ${{ secrets.ALIAS }}
-          KEY_STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          ALIAS: testkey
+          KEY_STORE_PASSWORD: testpass123
+          KEY_PASSWORD: testpass123
           MEGACLOUD_API: ${{ secrets.MEGACLOUD_API }}
           KISSKH_API: ${{ secrets.KISSKH_API }}
           KISSKH_SUB_API: ${{ secrets.KISSKH_SUB_API }}
@@ -145,7 +155,10 @@ jobs:
 
       - name: Upload APKs (${{ matrix.chunk.number }})
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
-        if: github.repository == 'cemmekx096-cmd/project69'
+        # PENTING: ganti path repo di bawah ini sesuai repo BARU kamu
+        # (format: <username>/<nama-repo>), kalau gak diganti, step ini gak
+        # akan pernah jalan karena kondisinya selalu false untuk repo baru.
+        if: github.repository == 'cemmekx096-cmd/Cmd'
         with:
           name: "individual-apks-${{ matrix.chunk.number }}"
           path: "**/*.apk"
@@ -157,7 +170,8 @@ jobs:
   publish:
     name: Publish extension repo
     needs: [prepare, build]
-    if: github.repository == 'cemmekx096-cmd/project69'
+    # PENTING: ganti juga di sini sesuai repo BARU kamu
+    if: github.repository == 'cemmekx096-cmd/Cmd'
     runs-on: 'ubuntu-24.04'
     steps:
       - name: Download APK artifacts
@@ -189,6 +203,7 @@ jobs:
       - name: Checkout repo branch
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
         with:
+          # PENTING: ganti sesuai repo hasil ("Apk-...") milik kamu kalau beda
           repository: cemmekx096-cmd/Apk-project69
           token: ${{ secrets.BOT_PAT }}
           ref: repo
