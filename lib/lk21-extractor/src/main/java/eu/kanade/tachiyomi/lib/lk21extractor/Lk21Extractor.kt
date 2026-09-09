@@ -7,7 +7,9 @@ import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
 import okhttp3.Headers
+import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 /**
@@ -17,7 +19,8 @@ import org.json.JSONObject
  *
  * Provider yang di-support:
  * ├── Emturbovid  → emturbovid.com / turbovidhls.com
- * ├── Hownetwork  → cloud.hownetwork.xyz / stream.hownetwork.xyz (P2P)
+ * ├── Playcdn     → videonode.de / playcdn.de (P2P — flow token verify.php)
+ * ├── Hownetwork  → cloud.hownetwork.xyz / stream.hownetwork.xyz (P2P lama, fallback)
  * ├── Filesim     → f16px.com / furher.in / co4nxtrl.com (Cast)
  * └── Hydrax      → abysscdn.com (TODO)
  */
@@ -40,7 +43,12 @@ class Lk21Extractor(
                 url.contains("turbovidhls.com", ignoreCase = true) ->
                     extractEmturbovid(url, serverName)
 
-                // Hownetwork / P2P
+                // Videonode / Playcdn — P2P (baru, gantiin Hownetwork)
+                url.contains("videonode.de", ignoreCase = true) ||
+                url.contains("playcdn.de", ignoreCase = true) ->
+                    extractPlaycdn(url, serverName)
+
+                // Hownetwork / P2P (lama — kemungkinan sudah mati, dibiarkan sbg fallback)
                 url.contains("hownetwork.xyz", ignoreCase = true) ->
                     extractHownetwork(url, serverName)
 
@@ -145,6 +153,108 @@ class Lk21Extractor(
     }
 
     // =========================================================================
+    // 1b. Videonode / Playcdn Extractor (P2P baru)
+    // Flow:
+    //   Tahap 1: GET videonode.de/iframe3/p2p/{id} → cari <iframe src=playcdn.de/...>
+    //   Tahap 2: GET iframe playcdn.de/video.php?id=...&ok=1 → ambil var data={..,"token":".."}
+    //   Tahap 3: POST playcdn.de/verify.php {token, is_ios:false} → JSON {fileUrl: "...m3u8"}
+    //   Tahap 4: Extract hash 32-hex dari fileUrl → generate semua quality (0=480p,1=720p,2=1080p,3=4K)
+    // CATATAN: token sekali pakai & berlaku singkat, jadi Tahap 1-3 harus berurutan
+    // tanpa jeda/cache di antaranya.
+    // =========================================================================
+    private fun extractPlaycdn(url: String, serverName: String): List<Video> {
+        return try {
+            val videonodeBase = "https://videonode.de/"
+            val playcdnBase = "https://playcdn.de"
+            val mobileUa = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 " +
+                "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
+
+            // ── Tahap 1: Wrapper → cari iframe ke playcdn.de ──
+            Log.d(tag, "[Playcdn] Tahap 1 - Wrapper: $url")
+            val wrapperHeaders = Headers.Builder()
+                .add("Referer", videonodeBase)
+                .add("User-Agent", mobileUa)
+                .build()
+
+            val wrapperDoc = client.newCall(GET(url, wrapperHeaders)).execute().asJsoup()
+            val iframeSrc = wrapperDoc.selectFirst("iframe[src*=playcdn.de]")?.attr("src")
+
+            if (iframeSrc.isNullOrEmpty()) {
+                Log.w(tag, "[Playcdn] Iframe playcdn.de tidak ditemukan di wrapper")
+                return emptyList()
+            }
+            Log.d(tag, "[Playcdn] Tahap 1 OK - iframe: $iframeSrc")
+
+            // ── Tahap 2: Buka iframe → ambil token ──
+            val iframeHeaders = Headers.Builder()
+                .add("Referer", videonodeBase)
+                .add("Origin", playcdnBase)
+                .add("User-Agent", mobileUa)
+                .build()
+
+            val iframeBody = client.newCall(GET(iframeSrc, iframeHeaders)).execute().body.string()
+
+            val token = Regex("""var\s+data\s*=\s*\{[^}]*"token"\s*:\s*"([^"]+)"""")
+                .find(iframeBody)?.groupValues?.get(1)
+
+            if (token.isNullOrEmpty()) {
+                Log.w(tag, "[Playcdn] Token tidak ditemukan di iframe")
+                return emptyList()
+            }
+            Log.d(tag, "[Playcdn] Tahap 2 OK - token didapat")
+
+            // ── Tahap 3: Tukar token via verify.php ──
+            val verifyHeaders = Headers.Builder()
+                .add("Referer", iframeSrc)
+                .add("Origin", playcdnBase)
+                .add("User-Agent", mobileUa)
+                .build()
+
+            val verifyPayload = JSONObject().apply {
+                put("token", token)
+                put("is_ios", false)
+            }
+            val verifyBody = verifyPayload.toString()
+                .toRequestBody("application/json; charset=utf-8".toMediaType())
+
+            val verifyResponse = client.newCall(
+                POST("$playcdnBase/verify.php", verifyHeaders, verifyBody),
+            ).execute()
+            val verifyJson = JSONObject(verifyResponse.body.string())
+            val fileUrl = verifyJson.optString("fileUrl", "").trim()
+
+            if (fileUrl.isEmpty()) {
+                Log.w(tag, "[Playcdn] fileUrl kosong dari verify.php (token mungkin sudah expired)")
+                return emptyList()
+            }
+            Log.d(tag, "[Playcdn] Tahap 3 OK - fileUrl: $fileUrl")
+
+            // ── Tahap 4: Extract hash → generate semua quality ──
+            val hash = Regex("""[a-f0-9]{32}""").find(fileUrl)?.value
+            val videoHeaders = Headers.Builder()
+                .add("Referer", "$playcdnBase/")
+                .add("Origin", playcdnBase)
+                .build()
+
+            if (hash == null) {
+                Log.w(tag, "[Playcdn] Hash tidak ditemukan, fallback ke fileUrl asli")
+                return listOf(Video(fileUrl, "$serverName - Playcdn", fileUrl, videoHeaders))
+            }
+
+            val queryString = fileUrl.substringAfter("?", "").let { if (it.isNotEmpty()) "?$it" else "" }
+            val qualityMap = linkedMapOf(3 to "4K", 2 to "1080p", 1 to "720p", 0 to "480p")
+
+            qualityMap.map { (qIndex, qLabel) ->
+                val qualityUrl = "https://stream.playcdn.de/playlist/$hash/$qIndex/0.m3u8$queryString"
+                Video(qualityUrl, "$serverName - Playcdn $qLabel", qualityUrl, videoHeaders)
+            }
+        } catch (e: Exception) {
+            Log.e(tag, "[Playcdn] Error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // =========================================================================
     // 2. Hownetwork Extractor (P2P)
     // Port dari: Extractors.kt CloudStream LK21
     // Flow: POST /api2.php?id={id} → JSON {file: url} → video URL
@@ -237,7 +347,9 @@ class Lk21Extractor(
             var pageText = pageResponse.body.string()
 
             // Follow iframe kalau ada
-            val iframeSrc = pageResponse.asJsoup()
+            // (pakai pageText yg sudah dibaca — asJsoup() tanpa param akan re-read body
+            // yang sudah closed dan throw exception)
+            val iframeSrc = pageResponse.asJsoup(pageText)
                 .selectFirst("iframe[src]")?.attr("src")
 
             if (iframeSrc != null) {
@@ -256,7 +368,7 @@ class Lk21Extractor(
                 Log.d(tag, "[Filesim] JS unpacking...")
                 JsUnpacker.unpackAndCombine(pageText) ?: pageText
             } else {
-                pageResponse.asJsoup()
+                pageResponse.asJsoup(pageText)
                     .select("script")
                     .firstOrNull {
                         it.data().contains("sources:") ||

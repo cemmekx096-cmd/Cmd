@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application>
+        <activity
+            android:name=".LK21SeriesUrlActivity"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                
+                <!-- Domain utama nontondrama -->
+                <data android:scheme="https" />
+                <data android:host="tv3.nontondrama.my" />
+                <data android:pathPattern="/.*" />
+                
+                <!-- Domain alternatif series.lk21 -->
+                <data android:scheme="https" />
+                <data android:host="series.lk21.de" />
+                <data android:pathPattern="/.*" />
+                
+                <!-- Wildcard subdomain nontondrama -->
+                <data android:scheme="https" />
+                <data android:host="*.nontondrama.my" />
+                <data android:pathPattern="/.*" />
+                
+                <!-- Juga support http -->
+                <data android:scheme="http" />
+                <data android:host="tv3.nontondrama.my" />
+                <data android:pathPattern="/.*" />
+                
+                <data android:scheme="http" />
+                <data android:host="series.lk21.de" />
+                <data android:pathPattern="/.*" />
+                
+                <data android:scheme="http" />
+                <data android:host="*.nontondrama.my" />
+                <data android:pathPattern="/.*" />
+            </intent-filter>
+            
+        </activity>
+    </application>
+    
+</manifest>
