@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>its-okay-to-not-be-okay-saikojiman-gwaenchanha-season-1-episode-3-2020.mp4</title>
+    <meta content="Embed" name="description" />
+    <meta name="google" content="notranslate">
+  	<link rel="icon" href="http://turboviplay.com/frontend/images/logo1.png">
+    <link href="../jwplayer/css/player.css?v=4" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+            <script src="https://cdn3.turboviplay.com/jwplayer/js/jwplayer1.js"></script>
+        <!-- Yandex.Metrika counter -->
+    <script type="text/javascript" >
+       (function(m,e,t,r,i,k,a){m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+       m[i].l=1*new Date();k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)})
+       (window, document, "script", "https://mc.yandex.ru/metrika/tag.js", "ym");
+
+       ym(83308117, "init", {
+            clickmap:true,
+            trackLinks:true,
+            accurateTrackBounce:true
+       });
+    </script>
+    <noscript><div><img src="https://mc.yandex.ru/watch/83308117" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+    <!-- /Yandex.Metrika counter -->
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-RXQM5QPSYX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-RXQM5QPSYX');
+    </script>
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+            
+  <style>
+    #video_player{
+      height: 100vh !important;
+    }
+  </style>
+    </head>
+<body>
+          <div class="preloader" data="sv3">
+        <div class="preloader-icon"></div>
+        <span>Loading...</span>
+    </div>
+    <div class="container-fluid"  onclick="play()" >
+    <div id="video_player" data-hash="https://cdn3.turboviplay.com/data/ewwZpOZIezlYcpXGwdqG/ewwZpOZIezlYcpXGwdqG.m3u8">
+        
+        
+    </div>
+    </div>
+    <script>
+      const isMobile = {
+        Android: function () {
+            return navigator.userAgent.match(/Android/i);
+        },
+        BlackBerry: function () {
+            return navigator.userAgent.match(/BlackBerry/i);
+        },
+        iOS: function () {
+            return navigator.userAgent.match(/iPhone|iPad|iPod/i);
+        },
+        Opera: function () {
+            return navigator.userAgent.match(/Opera Mini/i);
+        },
+        Windows: function () {
+            return navigator.userAgent.match(/IEMobile/i) || navigator.userAgent.match(/WPDesktop/i);
+        },
+        any: function () {
+            return isMobile.Android() || isMobile.BlackBerry() || isMobile.iOS() || isMobile.Opera() || isMobile.Windows();
+        }
+    };
+      var t = 0;
+      var playID = 0;
+      var videoID = 'ewwZpOZIezlYcpXGwdqG';
+      var userID = '100034';
+      var urlPlay = 'https://cdn3.turboviplay.com/data/ewwZpOZIezlYcpXGwdqG/ewwZpOZIezlYcpXGwdqG.m3u8';
+      var checkLogo = ''; 
+      var iframe = "true";
+      var domainEmbed = "playeriframe.lol,playeriframe.sbs,videonode.de";
+      var typeVideo = "1";
+      var domainIframe = document.referrer;
+      var domainUser = document.referrer;
+      var enablePlay = 'no';
+      var premium = '0';
+      var mobile = '2';
+      var checkIP = '2';
+      var country = 'ID';
+      var checkAndroid = '0'
+      var urlSub = '0';
+      if( window.self !== window.top ){
+          var checkIframe ='iframe';
+      }
+      else{
+          var checkIframe = 'no iframe';
+      }
+      if(iframe == 'true' && checkIframe == 'no iframe') 
+        var iframePlay = true;
+      else 
+        var iframePlay = false;
+      //logo
+      var logo = "no";
+      if(logo == "no"){
+          var urlLogo = "";
+      }
+      else{
+          var urlLogo = "https://v2.sptvp.com/play/"+userID+"/logo.png";
+      }
+      //poster
+      var poster = "no" == "no" ? 'https://ver1.sptvp.com/poster/0/E3/ewwZpOZIezlYcpXGwdqG.png' : 'https://ver1.sptvp.com/play/'+userID+'/poster.png';
+      //title
+      var title = "" == true ? "its-okay-to-not-be-okay-saikojiman-gwaenchanha-season-1-episode-3-2020.mp4" : "";
+      //sub text
+      urlSub = urlSub == 0 ? 'https://google.com' : urlSub;
+      //check domain
+      var checkDomain = true;
+      console.log(domainIframe)
+      if(domainEmbed != 'no'){
+          checkDomain = false;
+          const domainEmbedArr = domainEmbed.split(",");
+          var sizeDomain = domainEmbedArr.length;
+          for(var i=0; i<sizeDomain; i++){
+              var result = domainIframe.indexOf(domainEmbedArr[i]);
+              if(result >= 0) checkDomain = true;
+              if(mobile == '1') checkDomain = true;
+          }
+      }
+      if(mobile == '0'){ checksandbox(); }
+      const toBLOB = async (url) => {
+          const response = await fetch(url);
+          return await response.blob();
+      };
+      //custom ads
+            const custom_ads = [];
+      function getVastAds(ads) {
+          return ads.filter(ad => ad.adsType === 'vast');
+      }
+      function getDirectAds(ads) {
+          return ads.filter(ad => ad.adsType === 'direct');
+      }
+      function getPopunderAds(ads) {
+          return ads.filter(ad => ad.adsType === 'popunder');
+      }
+     const loadPlayer = async (file) => {
+        const player = jwplayer('video_player');
+        const options = {
+            key: 'ITWMv7t88JGzI0xPwW8I0+LveiXX9SWbfdmt0ArUSyc=',
+            sources: [{ file, type: 'hls' }],
+            playbackRateControls: [0.75, 1, 1.25, 1.5],
+            aspectratio: "16:9",
+            jwplayer8quality: true,
+            controls: true,
+            preload: true,
+            aspectratio: "16:9",
+            width: '100%',
+            height: '100%',
+            "autostart": false,
+            skin: { active: "rgb(221,51,51)", },
+            image: poster,
+            logo: {
+                "file": urlLogo,
+                "link": "",
+                "hide": checkLogo,
+                "position": "control-bar"
+            },
+            title : title,
+            localization: {
+                locale: 'en',
+            }
+        };
+          const jsonUrl = urlSub;
+             const languageCodes = {
+                'eng': 'English',
+                'spa': 'Spanish',
+                'aze': 'Azerbaijani',
+                'alb': 'Albanian',
+                'ara': 'Arabic',
+                'bul': 'Bulgarian',
+                'chi': 'Chinese',
+                'dnk': 'Denmark',
+                'dut': 'Dutch',
+                'per': 'Persian',
+                'fin': 'Finland',
+                'fre': 'French',
+                'fil': 'Filipino',
+                'tgl': 'Tagalog',
+                'ger': 'German',
+                'gre': 'Greek',
+                'heb': 'Hebrew',
+                'hin': 'Hindi',
+                'hun': 'Hungarian',
+                'ind': 'Indonesian',
+                'ita': 'Italian',
+                'jpn': 'Japanese',
+                'kan': 'Kannada',
+                'khm': 'Khmer',
+                'kor': 'Korean',
+                'mal': 'Malayalam',
+                'may': 'Malay',
+                'nor': 'Norway',
+                'nob': 'Norwegian Bokmål',
+                'nno': 'Norwegian Nynorsk',
+                'pol': 'Polish',
+                'por': 'Portuguese',
+                'rus': 'Russian',
+                'sin': 'Sinhala',
+                'slv': 'Slovenian',
+                'srp': 'Serbian',
+                'swe': 'Sweden',
+                'tam': 'Tamil',
+                'tha': 'Thai',
+                'tur': 'Turkish',
+                'ukr': 'Ukrainian',
+                'vie': 'Vietnamese',
+                'rum': 'Romanian',
+                'mar': 'Marathi',
+                'cze': 'Czech',
+                'slo': 'Slovak',
+                'lit': 'Lithuanian',
+                'kur': 'Kurdish',
+                'dan': 'Danish',
+                'bos': 'Bosnian',
+                'hrv': 'Croatian',
+                'ton': 'Tongan',
+            };
+            try {
+                const response = await fetch(jsonUrl);
+                if (!response.ok) throw new Error("Subtitle file not found");
+                const data = await response.json();
+                const tracks = data.map(item => {
+                  const file = item.file;
+
+                  const match = file.match(/\/([a-z]{3})(?:_(\d+))?\.vtt$/i);
+                  let code = "";
+                  let index = "";
+
+                  if (match) {
+                      code = languageCodes[match[1]] + ' (' + match[1] + ')';
+                      index = match[2] || "";          // 1, 2...
+                  }
+
+                  const label = item.label && item.label.trim()
+                      ? item.label
+                      : index
+                          ? `${code} ${index}`
+                          : code;
+
+                  return {
+                      kind: "captions",
+                      file: item.file,
+                      language: label,
+                      label: label,
+                  };
+              });
+                // Add subtitle tracks to the player options
+                if (tracks.length > 0) {
+                    options.tracks = tracks;
+                    options.captions = { default: true, track: 1 };
+                }
+            } catch (error) {
+            };
+        const vastAds = getVastAds(custom_ads);
+        if (vastAds.length > 0) {
+            options.advertising = {
+                client: 'vast',
+                schedule: vastAds.map(ad => ({
+                    tag: ad.linkAds,
+                    offset: ad.offset
+                }))
+            };
+        }
+        player.setup(options);
+        const popunderAds = getPopunderAds(custom_ads);
+        
+        if (popunderAds && popunderAds.length > 0) {
+          const pendingAds = popunderAds.map((ad) => ({
+            ...ad,
+            targetOffset: Number(ad.offset) || 0, 
+            triggered: false
+          }));
+        
+          player.on('time', (event) => {
+            const currentPosition = event.position;
+        
+            pendingAds.forEach((ad) => {
+              if (currentPosition >= ad.targetOffset && !ad.triggered) {
+                ad.triggered = true;
+        
+                let adContent = (ad.linkAds || '').trim();
+                if (!adContent) return;
+        
+                const txt = document.createElement('textarea');
+                txt.innerHTML = adContent;
+                adContent = txt.value.trim();
+        
+                if (adContent.toLowerCase().includes('<script')) {
+                  const range = document.createRange();
+                  const fragment = range.createContextualFragment(adContent);
+                  document.head.appendChild(fragment);
+                } else {
+                  const script = document.createElement('script');
+                  script.type = 'text/javascript';
+                  script.src = adContent;
+                  script.async = true;
+                  document.head.appendChild(script);
+                }
+              }
+            });
+          });
+        }
+        player.addButton(
+            '<svg xmlns="http://www.w3.org/2000/svg" class="jw-svg-icon jw-svg-icon-rewind2" viewBox="0 0 240 240" focusable="false"><path d="m 25.993957,57.778 v 125.3 c 0.03604,2.63589 2.164107,4.76396 4.8,4.8 h 62.7 v -19.3 h -48.2 v -96.4 H 160.99396 v 19.3 c 0,5.3 3.6,7.2 8,4.3 l 41.8,-27.9 c 2.93574,-1.480087 4.13843,-5.04363 2.7,-8 -0.57502,-1.174985 -1.52502,-2.124979 -2.7,-2.7 l -41.8,-27.9 c -4.4,-2.9 -8,-1 -8,4.3 v 19.3 H 30.893957 c -2.689569,0.03972 -4.860275,2.210431 -4.9,4.9 z m 163.422413,73.04577 c -3.72072,-6.30626 -10.38421,-10.29683 -17.7,-10.6 -7.31579,0.30317 -13.97928,4.29374 -17.7,10.6 -8.60009,14.23525 -8.60009,32.06475 0,46.3 3.72072,6.30626 10.38421,10.29683 17.7,10.6 7.31579,-0.30317 13.97928,-4.29374 17.7,-10.6 8.60009,-14.23525 8.60009,-32.06475 0,-46.3 z m -17.7,47.2 c -7.8,0 -14.4,-11 -14.4,-24.1 0,-13.1 6.6,-24.1 14.4,-24.1 7.8,0 14.4,11 14.4,24.1 0,13.1 -6.5,24.1 -14.4,24.1 z m -47.77056,9.72863 v -51 l -4.8,4.8 -6.8,-6.8 13,-12.99999 c 3.02543,-3.03598 8.21053,-0.88605 8.2,3.4 v 62.69999 z"></path></svg>',
+            'next 10s',
+            function () {
+                player.seek(player.getPosition() + 10);
+            },
+            'next 10s'
+        );
+        player.addButton(
+            '<svg xmlns="http://www.w3.org/2000/svg" class="jw-svg-icon jw-svg-icon-rewind" viewBox="0 0 240 240" focusable="false"><path d="M113.2,131.078a21.589,21.589,0,0,0-17.7-10.6,21.589,21.589,0,0,0-17.7,10.6,44.769,44.769,0,0,0,0,46.3,21.589,21.589,0,0,0,17.7,10.6,21.589,21.589,0,0,0,17.7-10.6,44.769,44.769,0,0,0,0-46.3Zm-17.7,47.2c-7.8,0-14.4-11-14.4-24.1s6.6-24.1,14.4-24.1,14.4,11,14.4,24.1S103.4,178.278,95.5,178.278Zm-43.4,9.7v-51l-4.8,4.8-6.8-6.8,13-13a4.8,4.8,0,0,1,8.2,3.4v62.7l-9.6-.1Zm162-130.2v125.3a4.867,4.867,0,0,1-4.8,4.8H146.6v-19.3h48.2v-96.4H79.1v19.3c0,5.3-3.6,7.2-8,4.3l-41.8-27.9a6.013,6.013,0,0,1-2.7-8,5.887,5.887,0,0,1,2.7-2.7l41.8-27.9c4.4-2.9,8-1,8,4.3v19.3H209.2A4.974,4.974,0,0,1,214.1,57.778Z"></path></svg>',
+            'prv 10s',
+            function () {
+                player.seek(player.getPosition() - 10);
+            },
+            'prv 10s'
+        );
+    };
+    
+    $(document).ready(async () => {
+        console.log(checkDomain)
+        let adBlockEnabled = false
+        if((adBlockEnabled == false && iframePlay == false && checkDomain == true) || enablePlay == 'yes'){
+          const hash = $('#video_player').data('hash');
+          let file = urlPlay;
+          loadPlayer(file);
+          $('.preloader').fadeOut();
+        }
+    });
+      if(userID == 100471 || userID == 101299 || userID == 101140 || userID == 100396 || userID == 101187){
+        document.getElementById('pop').addEventListener("click", () => {
+            var e = document.getElementById('pop');
+            e.remove();
+            let currentTime = new Date(new Date().toUTCString());
+            currentTime.setUTCHours(currentTime.getUTCHours() + 3);
+            let hours = currentTime.getUTCHours();
+            hours = parseInt(hours)
+            if(userID == 100471 || userID == 101299 || ((userID == 101140 || userID == 100396 || userID == 101187) && checkIP >= 3)){
+                window.open("https://ad.twinrdengine.com/adraw?zone=01DXF6DT0040000000000028P3&kw=COMMA_SEPARATED_KEYWORDS");
+            }
+        });
+      }
+      function openNewTab(url) {
+        var a = document.createElement('a');
+        a.href = url;
+        a.target = '_blank'; 
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+      function play(){
+          if(playID == 0){
+              jwplayer("video_player").play();
+              checkIP = parseInt(checkIP);
+              if(premium == '0' && typeVideo != 1 && userID == 100507){
+                  openNewTab("//tsyndicate.com/api/v1/direct/9813a20eb31740eb94471b814de9693e?extid={extid}")
+              }
+              if(premium == '0' && typeVideo != 1 && (userID == 100680 || userID == 100043)){
+                  if((checkIP+1)%2 != 0)
+                      openNewTab("https://fractionfridgejudiciary.com/2009872/?var="+userID)
+                  if((checkIP+1)%2 == 0)
+                      openNewTab("https://ad.twinrdengine.com/adraw?zone=01DXF6DT0040000000000028P3&kw=COMMA_SEPARATED_KEYWORDS")
+              }
+              if(premium == '0' && typeVideo == 1 && (userID != 100004 && userID != 100005 && userID != 100006 )){
+                  openNewTab("https://fractionfridgejudiciary.com/2009872/?var="+userID);
+              }
+              if(premium == '0' && typeVideo != 1 && userID != 100471 && userID != 100507 && userID != 100680 && userID != 100043 && country != 'IN'){
+                  openNewTab("https://fractionfridgejudiciary.com/2009872/?var="+userID);
+              }
+              
+              if(premium == '0' && typeVideo != 1 && country == 'IN' && userID != 100680 && userID != 100043){
+                  openNewTab("https://endedstrung.com/fcq5gmbf?key=eba12cc4be56fd1256c5c40a767e812c");
+              }
+              playID = 1;
+              var d = new Date();
+              //view
+              if(premium == '0'){
+              	  viewNoPremiun(userID, videoID);
+              } else{
+              	  viewPremiun(userID, videoID);
+              }
+          }
+      }
+      
+      if(premium == '0'){
+          $('body').click(function(){
+              if(typeVideo == 1){
+                  var pop1 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID != 100854 && userID != 100003 && userID != 100004 && userID != 100005 && userID != 100006 && userID != 100034 && userID != 100815 && userID != 100250 && userID != 100774){
+                          
+                          $('body').click(function(){
+                              if(b == 0)
+                                  window.open("https://fractionfridgejudiciary.com/2009872/?var="+userID);
+                              b = 1;
+                          })
+                      }
+                      b = 1;
+                      clearTimeout(pop1)
+                      console.log('a')
+                  }, 10000)
+                  var pop2 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0){
+                          var galasion = document.createElement('script');
+                          galasion.src = '//zm.acreageupwhirl.com/rD3tGarEI5j0W9b7/69285';
+                          galasion.async = true;
+                          galasion.defer = true;
+                          document.body.appendChild(galasion);
+                          b = 1;
+                      };
+                      clearTimeout(pop2)
+                  }, 1200000)
+                  $('body').unbind()
+              }
+              else{
+                  var pop1 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID != 100854 && userID != 104392 && userID != 100008 && userID != 100344 && userID != 100806 && userID != 100808 && userID != 100003 && userID != 101299 && userID != 100396 && userID != 101140){
+                          
+                          $('body').click(function(){
+                              if(b == 0)
+                                  window.open("https://fractionfridgejudiciary.com/2009872/?var="+userID);
+                              b = 1;
+                          })
+                      }
+                      
+                      if(b == 0 && userID == 101299){
+                          $('body').click(function(){
+                              if(b == 0)
+                                  window.open("https://purposeparking.com/gim7hz4s?key=79963d7064ce549f1e962623ab7e015c");
+                              b = 1;
+                          })
+                      }
+                      
+                      clearTimeout(pop1)
+                  }, 5000)
+                  
+                  var pop2 = setTimeout(function(){
+                      var b = 0;
+                      $('body').click(function(){
+                          if(b == 0 && userID == '100327')
+                              window.open("http://monkrix.com/in/p?spot_id=836292&cat=25&sub_id=1577249763");
+                          b = 1;
+                      })
+                      clearTimeout(pop2)
+                  }, 10000)
+                  
+                  var popGG = setTimeout(function(){
+                      var b = 0;
+                      $('body').click(function(){
+                          if(b == 0 && userID == '100854')
+                              window.open("https://earnvids05032026.shop/api/direct/500865?s1=%subid1%&kw=");
+                          b = 1;
+                      })
+                      clearTimeout(pop2)
+                  }, 1000)
+                  
+                  var pop4 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet1 = document.createElement('script');
+                          jet1.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet1);
+                          b = 1;
+                      }
+                      clearTimeout(pop4)
+                  }, 10000)
+                  var pop5 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet2 = document.createElement('script');
+                          jet2.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet2);
+                          b = 1;
+                      }
+                      clearTimeout(pop5)
+                  }, 600000)
+                  var pop6 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet4 = document.createElement('script');
+                          jet4.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet4);
+                          b = 1;
+                      }
+                      clearTimeout(pop6)
+                  }, 1800000)
+                  var pop7 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet5 = document.createElement('script');
+                          jet5.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet5);
+                          b = 1;
+                      }
+                      clearTimeout(pop7)
+                  }, 3600000)
+                  var pop7tb = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet6 = document.createElement('script');
+                          jet6.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet6);
+                          b = 1;
+                      }
+                      clearTimeout(pop7tb)
+                  }, 7200000)
+                  var pop8tb = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          var jet7 = document.createElement('script');
+                          jet7.src = 'https://sextb.net/js/jquery_tb.js';
+                          document.getElementById('video_player').appendChild(jet7);
+                          b = 1;
+                      }
+                      clearTimeout(pop8tb)
+                  }, 14400000)
+                  var pop8 = setTimeout(function(){
+                      var b = 0;
+                      $('body').click(function(){
+                          checkIP = parseInt(checkIP);
+                          if(b == 0 && userID == '101140'){
+                              //if(mobile == '2' && country == 'JP' && checkIP < 2)
+                                  //window.open("https://ridch.online/index.php");
+                              //else
+                                  window.open("//go.reebr.com/smartpop/61eede0f3c87be6f1d94aae3dad21fe8dbbdcd4558506b02e6c79af49ccf3029?userId=1fedce5ad2e0a7b6907ec992d21b73552a4b05b57c2b560f19ed59b3d2fe2618");
+                          }
+                          b = 1;
+                      })
+                      clearTimeout(pop8)
+                  }, 5000)
+                  var pop9 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '101299'){
+                          $('body').click(function(){
+                              if(b == 0){
+                                  window.open("https://endedstrung.com/fcq5gmbf?key=eba12cc4be56fd1256c5c40a767e812c");
+                              }
+                              b = 1;
+                          })
+                      }
+                      clearTimeout(pop9)
+                  }, 30000)
+                  var pop10 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100471'){
+                          $('body').click(function(){
+                              checkIP = parseInt(checkIP);
+                              if(b == 0){
+                                  //if(mobile == '2' && country == 'JP' && checkIP < 2)
+                                      //window.open("https://ridch.online/index.php");
+                                  //else
+                                      window.open("https://xapi.juicyads.com/service_advanced.php?code=34c4x274z2345674034364a4x2&u=http%3A%2F%2Fwww.juicyads.rocks");
+                              }
+                              b = 1;
+                          })
+                      };
+                      clearTimeout(pop10)
+                  }, 20000)
+                  var pop11 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '100396'){
+                          var harry = document.createElement('script');
+                          harry.src = '//5vbs96dea.com/aas/r45d/vki/1994455/2ecd9865.js';
+                          document.getElementById('video_player').appendChild(harry);
+                          b = 1;
+                      }
+                      clearTimeout(pop11)
+                  }, 10000)
+                  var pop12 = setTimeout(function(){
+                      var b = 0;
+                      if(b == 0 && userID == '101122'){
+                          $('body').click(function(){
+                              if(b == 0)
+                                  window.open("https://43ors1osh.com/2015181");
+                              b = 1;
+                              console.log('1122')
+                          })
+                      }
+                      clearTimeout(pop12)
+                  }, 10000)
+                  
+                  var popArai = setTimeout(function(){
+                      var b = 0;
+                      if (b == 0 && userID == '100344') {
+                          var popunder = document.createElement('script');
+                          popunder.src = 'https://overplantovervaluetwine.com/2046269.js';
+                          document.getElementById('video_player').appendChild(popunder);
+                          b = 1;
+                      };
+                      clearTimeout(popArai)
+                  }, 10000)
+                $('body').unbind()
+              }
+          })
+      }
+      
+      function checksandbox(){
+          function r(){window.location.href='https://emturbovid.com/sandbox'}
+          try{if(window.frameElement.hasAttribute("sandbox"))r();return}catch(t){}
+          try{document.domain=document.domain}catch(t){try{if(-1!=t.toString().toLowerCase().indexOf("sandbox"))r();return}catch(t){}}
+          try{if(!window.navigator.plugins["namedItem"]("Chrome PDF Viewer")) return false}catch(e){return false}
+          var e = document.createElement('object');
+          e.data = "data:application/pdf;base64,aG1t";
+          e.style = "position:absolute;top:-500px;left:-500px;visibility:hidden;";
+          e.onerror = function(){r()};
+          e.onload = function(){e.parentNode.removeChild(e)};
+          document.body.appendChild(e);
+          setTimeout(function(){e.parentNode.removeChild(e)},150);
+      }
+      const directAds = getDirectAds(custom_ads);
+      if(directAds.length > 0) {
+          directAds.forEach((ad , index) => {
+              setTimeout(() => {
+                  const adDiv = document.createElement('div');
+                  adDiv.className = 'div_pop'
+                  adDiv.id = 'pop'+ index;
+                  document.body.appendChild(adDiv);
+                  adDiv.addEventListener('click', function() {
+                      openNewTab(ad.linkAds);
+                      this.remove();
+                  });
+              }, ad.offset * 1000);
+          });
+      }
+
+
+    	function watch30s(){
+    	    var watch30s = setTimeout(function(){
+    	        $.ajax({
+                    url:  "https://ver02.sptvp.com/watch30s",
+                    type: 'GET',
+                    success: function (data) {
+                    },
+                    error: function (e) {
+                        console.log(e.message);
+                    }
+                });
+                clearTimeout(watch30s)
+            }, 30000)
+    	}
+    	function watch5p(){
+    	    var watch5p = setTimeout(function(){
+    	        $.ajax({
+                    url:  "https://ver02.sptvp.com/watch5p",
+                    type: 'GET',
+                    success: function (data) {
+                    },
+                    error: function (e) {
+                        console.log(e.message);
+                    }
+                });
+                clearTimeout(watch30s)
+            }, 300000)
+    	}
+    	
+    	function viewNoPremiun(userID, videoID){
+    	    var view = setTimeout(function(){
+                var c = 0;
+                $('body').click(function(){
+                    if(c == 0){
+                        $.ajax({
+                            url:  "https://ver02.sptvp.com/watch?videoID="+videoID+"&userID="+userID,
+                            type: 'GET',
+                            success: function (data) {
+                            },
+                            error: function (e) {
+                            
+                            }
+                        });
+                        $.ajax({
+                            url:  "https://ver03.sptvp.com/watch?videoID="+videoID+"&userID="+userID,
+                            type: 'GET',
+                            success: function (data) {
+                            },
+                            error: function (e) {
+                            
+                            }
+                        });
+                        $.ajax({
+                            url:  "https://v.sptvp.com/count.php?id="+videoID+"&uid="+userID,
+                            type: 'GET',
+                            success: function (data) {
+                            },
+                            error: function (e) {
+                            
+                            }
+                        });
+                        c = 1;
+                    }
+                    console.log('view')
+                })
+                clearTimeout(view)
+            }, 1000)
+    	}
+    	function viewPremiun(userID, videoID){
+    	    var view = setTimeout(function(){
+                var c = 0;
+                if(c == 0){
+                    $.ajax({
+                        url:  "https://ver02.sptvp.com/watch?videoID="+videoID+"&userID="+userID,
+                        type: 'GET',
+                        success: function (data) {
+                        },
+                        error: function (e) {
+                        
+                        }
+                    });
+                    $.ajax({
+                        url:  "https://ver03.sptvp.com/watch?videoID="+videoID+"&userID="+userID,
+                        type: 'GET',
+                        success: function (data) {
+                        },
+                        error: function (e) {
+                        
+                        }
+                    });
+                    $.ajax({
+                        url:  "https://v.sptvp.com/count.php?id="+videoID+"&uid="+userID,
+                        type: 'GET',
+                        success: function (data) {
+                        },
+                        error: function (e) {
+                        
+                        }
+                    });
+                    c = 1;
+                }
+                console.log('view premiun')
+                clearTimeout(view)
+            }, 1000)
+    	}
+    </script>
+
+</body>
+</html>

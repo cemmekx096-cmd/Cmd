@@ -11,6 +11,7 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.lib.lk21extractor.Lk21Extractor
+import eu.kanade.tachiyomi.lib.lk21extractor.TurboVipSegmentInterceptor
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
@@ -61,6 +62,8 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                 .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
+                // Strip PNG-hidden TS segment dari lh3.googleusercontent.com (trik TurboVIP)
+                .addInterceptor(TurboVipSegmentInterceptor())
                 .build()
         }
 
@@ -160,7 +163,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         thumbnail_url = document.select("meta[property=og:image]").attr("content")
         genre = document.select("div.tag-list span a").joinToString(", ") { it.text() }
 
-        // Status dari span.episode atau default completed
         status = if (document.selectFirst("span.episode.complete") != null) {
             SAnime.COMPLETED
         } else {
@@ -198,7 +200,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
         ReportLog.log("LK21Series-Episodes", "Parsing from: ${response.request.url}", LogLevel.INFO)
 
-        // Parse JSON dari script#season-data
         val seasonDataScript = document.selectFirst("script#season-data")?.data()
 
         if (seasonDataScript.isNullOrEmpty()) {
@@ -207,7 +208,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         }
 
         try {
-            // Parse JSON manually (format: {"1": [{episode_no, slug, s}, ...]})
             val json = org.json.JSONObject(seasonDataScript)
             val baseUrlPage = response.request.url.toString().substringBefore("?")
                 .trimEnd('/').substringBeforeLast("/")
@@ -251,7 +251,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
         ReportLog.log("LK21Series-Video", "=== VIDEO PARSE START ===", LogLevel.INFO)
         ReportLog.log("LK21Series-Video", "Page URL: $pageUrl", LogLevel.INFO)
 
-        // Ambil player list (dari LayarKacaProvider CloudStream logic)
         val playerItems = document.select("ul#player-list a[data-url]")
         ReportLog.log("LK21Series-Video", "Found ${playerItems.size} player links", LogLevel.INFO)
 
@@ -273,7 +272,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
             }
         }
 
-        // Fallback direct iframe
         if (playerEntries.isEmpty()) {
             ReportLog.log("LK21Series-Video", "No player-list, trying direct iframe", LogLevel.WARN)
             document.selectFirst("iframe[src]")?.let { iframe ->
@@ -285,17 +283,14 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
             }
         }
 
-        // Extract video dari setiap player (CloudStream logic)
         playerEntries.forEachIndexed { index, entry ->
             try {
                 ReportLog.log("LK21Series-Video", "[$index] Following: ${entry.name} → ${entry.url}", LogLevel.DEBUG)
 
-                // Follow link ke halaman intermediate
                 val intermediateDoc = client.newCall(
                     GET(entry.url, headers.newBuilder().add("Referer", pageUrl).build()),
                 ).execute().asJsoup()
 
-                // Ambil iframe src
                 val iframeSrc = intermediateDoc
                     .selectFirst("iframe[src]")
                     ?.attr("src")
@@ -305,7 +300,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                 ReportLog.log("LK21Series-Video", "[$index] Iframe src: $iframeSrc", LogLevel.DEBUG)
 
                 if (iframeSrc.isEmpty()) {
-                    // Kalau tidak ada iframe, coba resolve redirect
                     val resolvedUrl = resolveRedirect(entry.url)
                     ReportLog.log("LK21Series-Video", "[$index] No iframe, resolved: $resolvedUrl", LogLevel.WARN)
                     val videos = extractor.videosFromUrl(resolvedUrl, entry.name)
@@ -317,14 +311,12 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                     return@forEachIndexed
                 }
 
-                // Normalize iframe URL
                 val finalIframeUrl = when {
                     iframeSrc.startsWith("//") -> "https:$iframeSrc"
                     iframeSrc.startsWith("http") -> iframeSrc
                     else -> iframeSrc
                 }
 
-                // Handle short.icu redirect (dari CloudStream)
                 val resolvedUrl = if (finalIframeUrl.contains("short.icu")) {
                     resolveRedirect(finalIframeUrl)
                 } else {
@@ -333,7 +325,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
 
                 ReportLog.log("LK21Series-Video", "[$index] Extracting from: $resolvedUrl", LogLevel.INFO)
 
-                // Extract video
                 val videos = extractor.videosFromUrl(resolvedUrl, entry.name)
                 if (videos.isNotEmpty()) {
                     ReportLog.log("LK21Series-Video", "[$index] Found ${videos.size} video(s)", LogLevel.INFO)

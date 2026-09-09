@@ -6,10 +6,9 @@ import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.network.POST
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.FormBody
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Headers
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 
 /**
@@ -17,12 +16,15 @@ import org.json.JSONObject
  *
  * Dispatcher utama — detect provider dari full URL lalu delegate ke extractor.
  *
- * Provider yang di-support:
- * ├── Emturbovid  → emturbovid.com / turbovidhls.com
- * ├── Playcdn     → videonode.de / playcdn.de (P2P — flow token verify.php)
- * ├── Hownetwork  → cloud.hownetwork.xyz / stream.hownetwork.xyz (P2P lama, fallback)
- * ├── Filesim     → f16px.com / furher.in / co4nxtrl.com (Cast)
- * └── Hydrax      → abysscdn.com (TODO)
+ * Entry point videonode.de:
+ * ├── P2P       -> POST videonode.de/api.php -> playcdn.de/{code} -> GET /verify/{code} -> fileUrl
+ * └── TurboVIP  -> POST videonode.de/api.php -> emturbovid.com/t/xxx -> data-hash m3u8 (multi-quality)
+ *                  (Cast & Hydrax sengaja DI-SKIP dulu — belum diimplementasi)
+ *
+ * Provider direct-URL lama (masih di-support kalau ketemu link-nya langsung):
+ * ├── Emturbovid  -> emturbovid.com / turbovidhls.com
+ * ├── Hownetwork  -> cloud.hownetwork.xyz / stream.hownetwork.xyz (P2P lama)
+ * └── Filesim     -> f16px.com / furher.in / co4nxtrl.com (Cast)
  */
 class Lk21Extractor(
     private val client: OkHttpClient,
@@ -38,33 +40,25 @@ class Lk21Extractor(
 
         return try {
             when {
-                // Emturbovid / TurboVIP
+                // Entry point videonode.de (P2P & TurboVIP)
+                url.contains("videonode.de", ignoreCase = true) ->
+                    extractFromVideonode(url, serverName)
+
+                // Emturbovid / TurboVIP lama (direct link)
                 url.contains("emturbovid.com", ignoreCase = true) ||
                 url.contains("turbovidhls.com", ignoreCase = true) ->
                     extractEmturbovid(url, serverName)
 
-                // Videonode / Playcdn — P2P (baru, gantiin Hownetwork)
-                url.contains("videonode.de", ignoreCase = true) ||
-                url.contains("playcdn.de", ignoreCase = true) ->
-                    extractPlaycdn(url, serverName)
-
-                // Hownetwork / P2P (lama — kemungkinan sudah mati, dibiarkan sbg fallback)
+                // Hownetwork / P2P lama (direct link)
                 url.contains("hownetwork.xyz", ignoreCase = true) ->
                     extractHownetwork(url, serverName)
 
-                // Filesim / Cast
+                // Filesim / Cast lama (direct link)
                 url.contains("f16px.com", ignoreCase = true) ||
                 url.contains("furher.in", ignoreCase = true) ||
                 url.contains("co4nxtrl.com", ignoreCase = true) ||
                 url.contains("files.im", ignoreCase = true) ->
                     extractFilesim(url, serverName)
-
-                // Hydrax / Abyss — TODO
-                url.contains("abysscdn.com", ignoreCase = true) ||
-                url.contains("abyss.to", ignoreCase = true) -> {
-                    Log.w(tag, "Hydrax/Abyss not yet implemented: $url")
-                    emptyList()
-                }
 
                 else -> {
                     Log.w(tag, "Unknown provider: $url")
@@ -78,8 +72,228 @@ class Lk21Extractor(
     }
 
     // =========================================================================
-    // 1. Emturbovid Extractor
-    // Port dari: EmturbovidExtractor.kt (CloudStream)
+    // 0. Entry point videonode.de
+    // Flow: parse host+id dari path -> POST api.php -> embedUrl -> dispatch per-provider
+    // =========================================================================
+    private fun extractFromVideonode(url: String, serverName: String): List<Video> {
+        return try {
+            val parts = url.trimEnd('/').split("/")
+            val id = parts.lastOrNull()
+            val host = parts.getOrNull(parts.size - 2)
+
+            if (id.isNullOrEmpty() || host.isNullOrEmpty()) {
+                Log.w(tag, "[Videonode] Gagal parse host/id dari: $url")
+                return emptyList()
+            }
+            Log.d(tag, "[Videonode] host=$host id=$id")
+
+            val apiHeaders = headers.newBuilder()
+                .set("Referer", url)
+                .set("X-Requested-With", "XMLHttpRequest")
+                .build()
+
+            val formBody = FormBody.Builder()
+                .add("host", host)
+                .add("id", id)
+                .build()
+
+            val response = client.newCall(
+                POST("https://videonode.de/api.php", apiHeaders, formBody),
+            ).execute()
+            val json = JSONObject(response.body.string())
+            val embedUrl = json.optString("embedUrl", "")
+
+            if (embedUrl.isEmpty()) {
+                Log.w(tag, "[Videonode] embedUrl kosong: $json")
+                return emptyList()
+            }
+            Log.d(tag, "[Videonode] embedUrl: $embedUrl")
+
+            when (host.lowercase()) {
+                "p2p" -> extractP2P(embedUrl, serverName)
+                "turbovip" -> extractTurboVip(embedUrl, serverName)
+                // Cast & Hydrax sengaja di-skip — belum diimplementasi
+                "cast", "hydrax" -> {
+                    Log.w(tag, "[Videonode] Provider '$host' sengaja di-skip (belum diimplementasi)")
+                    emptyList()
+                }
+                else -> {
+                    Log.w(tag, "[Videonode] Host tidak dikenal: $host")
+                    emptyList()
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(tag, "[Videonode] Error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // =========================================================================
+    // 1. P2P Extractor (videonode.de → playcdn.de) — flow simpel
+    // Flow: embedUrl (playcdn.de/xxxxx) -> GET https://{domain}/verify/{code} -> {fileUrl}
+    // =========================================================================
+    private fun extractP2P(embedUrl: String, serverName: String): List<Video> {
+        return try {
+            Log.d(tag, "[P2P] embedUrl: $embedUrl")
+
+            val uri = embedUrl.toHttpUrlOrNull()
+            if (uri == null) {
+                Log.w(tag, "[P2P] Gagal parse embedUrl")
+                return emptyList()
+            }
+
+            val domain = uri.host
+            val code = uri.pathSegments.lastOrNull { it.isNotEmpty() }
+            if (code.isNullOrEmpty()) {
+                Log.w(tag, "[P2P] Gagal ambil code dari path")
+                return emptyList()
+            }
+
+            val verifyUrl = "https://$domain/verify/$code"
+            Log.d(tag, "[P2P] GET verify: $verifyUrl")
+
+            val verifyHeaders = headers.newBuilder()
+                .set("Referer", embedUrl)
+                .set("Origin", "https://$domain")
+                .build()
+
+            val response = client.newCall(GET(verifyUrl, verifyHeaders)).execute()
+            val json = JSONObject(response.body.string())
+            val fileUrl = json.optString("fileUrl", "")
+
+            if (fileUrl.isEmpty()) {
+                Log.w(tag, "[P2P] fileUrl kosong: $json")
+                return emptyList()
+            }
+            Log.d(tag, "[P2P] fileUrl: $fileUrl")
+
+            val videoHeaders = Headers.Builder()
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .add("Referer", "https://$domain/")
+                .build()
+
+            parseM3u8(fileUrl, embedUrl, serverName, "P2P", videoHeaders)
+        } catch (e: Exception) {
+            Log.e(tag, "[P2P] Error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // =========================================================================
+    // 2. TurboVIP Extractor (turboviplay.com / turbosplayer.com)
+    // Flow:
+    //   1. GET embed url -> capture Set-Cookie (PHPSESSID, XSRF-TOKEN, laravel_session)
+    //      -> parse hash="cdn.turboviplay.com/dataN/{hash}/{hash}.m3u8"
+    //   2. Brute-force dataN (heuristik: coba N+2 duluan) sampai ketemu multi-quality master
+    //   3. Parse #EXT-X-STREAM-INF -> nested turbosplayer.com master.m3u8 per resolusi
+    //   4. Semua request lanjutan WAJIB bawa Referer + Cookie yang di-capture di step 1
+    //      (segmen aslinya di lh3.googleusercontent.com, di-handle TurboVipSegmentInterceptor)
+    // =========================================================================
+    private fun extractTurboVip(embedUrl: String, serverName: String): List<Video> {
+        return try {
+            Log.d(tag, "[TurboVIP] Fetching embed: $embedUrl")
+
+            val pageHeaders = headers.newBuilder()
+                .set("Referer", "https://videonode.de/")
+                .build()
+
+            val pageResponse = client.newCall(GET(embedUrl, pageHeaders)).execute()
+            val pageBody = pageResponse.body.string()
+
+            // Capture cookie dari Set-Cookie — WAJIB, m3u8 gak bisa diplay tanpa ini
+            val cookieHeader = pageResponse.headers("Set-Cookie")
+                .joinToString("; ") { it.substringBefore(";") }
+            Log.d(tag, "[TurboVIP] Captured cookies: $cookieHeader")
+
+            val dataHash = Regex("""hash=["'](https?://[^"']+\.m3u8)["']""")
+                .find(pageBody)?.groupValues?.get(1)
+
+            if (dataHash.isNullOrEmpty()) {
+                Log.w(tag, "[TurboVIP] hash m3u8 url not found")
+                return emptyList()
+            }
+            Log.d(tag, "[TurboVIP] hash url: $dataHash")
+
+            // Headers ini dipakai buat SEMUA request lanjutan DAN video final,
+            // supaya cookie ikut ke-forward sampai ke segmen turbosplayer.com/googleusercontent.com
+            val turbovipHeaders = Headers.Builder()
+                .add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .add("Referer", embedUrl)
+                .apply { if (cookieHeader.isNotEmpty()) add("Cookie", cookieHeader) }
+                .build()
+
+            val (masterUrl, masterPlaylist) = findMultiQualityTurboVip(dataHash, turbovipHeaders)
+
+            if (masterPlaylist.isNullOrEmpty()) {
+                Log.w(tag, "[TurboVIP] No playlist retrieved at all")
+                return emptyList()
+            }
+
+            if (!masterPlaylist.contains("#EXT-X-STREAM-INF")) {
+                return listOf(Video(masterUrl, "$serverName - TurboVIP", masterUrl, turbovipHeaders))
+            }
+
+            val videos = mutableListOf<Video>()
+            masterPlaylist.lines().windowed(2).forEach { lines ->
+                if (lines[0].contains("#EXT-X-STREAM-INF")) {
+                    val quality = Regex("RESOLUTION=\\d+x(\\d+)")
+                        .find(lines[0])?.groupValues?.get(1)?.let { "${it}p" }
+                        ?: "Unknown"
+                    val nestedUrl = lines[1].trim()
+                    videos.add(Video(nestedUrl, "$serverName - TurboVIP $quality", nestedUrl, turbovipHeaders))
+                    Log.d(tag, "[TurboVIP] Quality: $quality -> $nestedUrl")
+                }
+            }
+            videos
+        } catch (e: Exception) {
+            Log.e(tag, "[TurboVIP] Error: ${e.message}")
+            emptyList()
+        }
+    }
+
+    // Brute-force cari varian 'dataN' yang punya multi-quality master playlist
+    private fun findMultiQualityTurboVip(originalUrl: String, headers: Headers): Pair<String, String?> {
+        val regex = Regex("""/(data)(\d*)/""")
+        val match = regex.find(originalUrl)
+            ?: return originalUrl to fetchPlaylist(originalUrl, headers)
+
+        val prefixEnd = match.groups[1]!!.range.first
+        val numGroup = match.groups[2]!!
+        val n = numGroup.value.toIntOrNull() ?: 0
+        val remainderStart = numGroup.range.last + 1
+
+        val candidatesN = listOf(n + 2) + listOf(0, 1, 2, 3).filter { it != n && it != n + 2 }
+
+        for (cn in candidatesN) {
+            val label = if (cn == 0) "data" else "data$cn"
+            val candidateUrl = originalUrl.substring(0, prefixEnd) + label + originalUrl.substring(remainderStart)
+            Log.d(tag, "[TurboVIP] Trying: $candidateUrl")
+
+            val playlist = fetchPlaylist(candidateUrl, headers) ?: continue
+            val streamCount = Regex("#EXT-X-STREAM-INF").findAll(playlist).count()
+
+            if (streamCount > 1) {
+                Log.d(tag, "[TurboVIP] Multi-quality found: $candidateUrl")
+                return candidateUrl to playlist
+            }
+        }
+
+        Log.d(tag, "[TurboVIP] No multi-quality variant, fallback to original")
+        return originalUrl to fetchPlaylist(originalUrl, headers)
+    }
+
+    private fun fetchPlaylist(url: String, headers: Headers): String? {
+        return try {
+            val response = client.newCall(GET(url, headers)).execute()
+            if (response.code != 200) return null
+            response.body.string()
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // =========================================================================
+    // 3. Emturbovid Extractor (direct link lama)
     // Flow: GET url → script[var urlPlay = '...'] → m3u8 URL
     // =========================================================================
     private fun extractEmturbovid(url: String, serverName: String): List<Video> {
@@ -123,15 +337,12 @@ class Lk21Extractor(
 
             Log.d(tag, "[Emturbovid] m3u8: $m3u8Url")
 
-            // Ikut CloudStream: langsung return master m3u8 + referer
-            // JANGAN parse/split playlist — biarkan player Aniyomi yang handle
-            // PENTING: Referer harus pakai CDN domain dari m3u8 URL, bukan emturbovid.com!
             val cdnDomain = when {
                 m3u8Url.contains("turboviplay.com") -> "https://turboviplay.com/"
                 m3u8Url.contains("turbovidhls.com") -> "https://turbovidhls.com/"
                 else -> "https://emturbovid.com/"
             }
-            
+
             val videoHeaders = Headers.Builder()
                 .add("Referer", cdnDomain)
                 .add("Origin", cdnDomain.trimEnd('/'))
@@ -153,110 +364,7 @@ class Lk21Extractor(
     }
 
     // =========================================================================
-    // 1b. Videonode / Playcdn Extractor (P2P baru)
-    // Flow:
-    //   Tahap 1: GET videonode.de/iframe3/p2p/{id} → cari <iframe src=playcdn.de/...>
-    //   Tahap 2: GET iframe playcdn.de/video.php?id=...&ok=1 → ambil var data={..,"token":".."}
-    //   Tahap 3: POST playcdn.de/verify.php {token, is_ios:false} → JSON {fileUrl: "...m3u8"}
-    //   Tahap 4: Extract hash 32-hex dari fileUrl → generate semua quality (0=480p,1=720p,2=1080p,3=4K)
-    // CATATAN: token sekali pakai & berlaku singkat, jadi Tahap 1-3 harus berurutan
-    // tanpa jeda/cache di antaranya.
-    // =========================================================================
-    private fun extractPlaycdn(url: String, serverName: String): List<Video> {
-        return try {
-            val videonodeBase = "https://videonode.de/"
-            val playcdnBase = "https://playcdn.de"
-            val mobileUa = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 " +
-                "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36"
-
-            // ── Tahap 1: Wrapper → cari iframe ke playcdn.de ──
-            Log.d(tag, "[Playcdn] Tahap 1 - Wrapper: $url")
-            val wrapperHeaders = Headers.Builder()
-                .add("Referer", videonodeBase)
-                .add("User-Agent", mobileUa)
-                .build()
-
-            val wrapperDoc = client.newCall(GET(url, wrapperHeaders)).execute().asJsoup()
-            val iframeSrc = wrapperDoc.selectFirst("iframe[src*=playcdn.de]")?.attr("src")
-
-            if (iframeSrc.isNullOrEmpty()) {
-                Log.w(tag, "[Playcdn] Iframe playcdn.de tidak ditemukan di wrapper")
-                return emptyList()
-            }
-            Log.d(tag, "[Playcdn] Tahap 1 OK - iframe: $iframeSrc")
-
-            // ── Tahap 2: Buka iframe → ambil token ──
-            val iframeHeaders = Headers.Builder()
-                .add("Referer", videonodeBase)
-                .add("Origin", playcdnBase)
-                .add("User-Agent", mobileUa)
-                .build()
-
-            val iframeBody = client.newCall(GET(iframeSrc, iframeHeaders)).execute().body.string()
-
-            val token = Regex("""var\s+data\s*=\s*\{[^}]*"token"\s*:\s*"([^"]+)"""")
-                .find(iframeBody)?.groupValues?.get(1)
-
-            if (token.isNullOrEmpty()) {
-                Log.w(tag, "[Playcdn] Token tidak ditemukan di iframe")
-                return emptyList()
-            }
-            Log.d(tag, "[Playcdn] Tahap 2 OK - token didapat")
-
-            // ── Tahap 3: Tukar token via verify.php ──
-            val verifyHeaders = Headers.Builder()
-                .add("Referer", iframeSrc)
-                .add("Origin", playcdnBase)
-                .add("User-Agent", mobileUa)
-                .build()
-
-            val verifyPayload = JSONObject().apply {
-                put("token", token)
-                put("is_ios", false)
-            }
-            val verifyBody = verifyPayload.toString()
-                .toRequestBody("application/json; charset=utf-8".toMediaType())
-
-            val verifyResponse = client.newCall(
-                POST("$playcdnBase/verify.php", verifyHeaders, verifyBody),
-            ).execute()
-            val verifyJson = JSONObject(verifyResponse.body.string())
-            val fileUrl = verifyJson.optString("fileUrl", "").trim()
-
-            if (fileUrl.isEmpty()) {
-                Log.w(tag, "[Playcdn] fileUrl kosong dari verify.php (token mungkin sudah expired)")
-                return emptyList()
-            }
-            Log.d(tag, "[Playcdn] Tahap 3 OK - fileUrl: $fileUrl")
-
-            // ── Tahap 4: Extract hash → generate semua quality ──
-            val hash = Regex("""[a-f0-9]{32}""").find(fileUrl)?.value
-            val videoHeaders = Headers.Builder()
-                .add("Referer", "$playcdnBase/")
-                .add("Origin", playcdnBase)
-                .build()
-
-            if (hash == null) {
-                Log.w(tag, "[Playcdn] Hash tidak ditemukan, fallback ke fileUrl asli")
-                return listOf(Video(fileUrl, "$serverName - Playcdn", fileUrl, videoHeaders))
-            }
-
-            val queryString = fileUrl.substringAfter("?", "").let { if (it.isNotEmpty()) "?$it" else "" }
-            val qualityMap = linkedMapOf(3 to "4K", 2 to "1080p", 1 to "720p", 0 to "480p")
-
-            qualityMap.map { (qIndex, qLabel) ->
-                val qualityUrl = "https://stream.playcdn.de/playlist/$hash/$qIndex/0.m3u8$queryString"
-                Video(qualityUrl, "$serverName - Playcdn $qLabel", qualityUrl, videoHeaders)
-            }
-        } catch (e: Exception) {
-            Log.e(tag, "[Playcdn] Error: ${e.message}")
-            emptyList()
-        }
-    }
-
-    // =========================================================================
-    // 2. Hownetwork Extractor (P2P)
-    // Port dari: Extractors.kt CloudStream LK21
+    // 4. Hownetwork Extractor (direct link lama, P2P via api2.php)
     // Flow: POST /api2.php?id={id} → JSON {file: url} → video URL
     // =========================================================================
     private fun extractHownetwork(url: String, serverName: String): List<Video> {
@@ -307,9 +415,9 @@ class Lk21Extractor(
                 .build()
 
             if (fileUrl.contains(".m3u8")) {
-                parseM3u8(fileUrl, url, serverName, "P2P", videoHeaders)
+                parseM3u8(fileUrl, url, serverName, "P2P-Legacy", videoHeaders)
             } else {
-                listOf(Video(fileUrl, "$serverName - P2P", fileUrl, videoHeaders))
+                listOf(Video(fileUrl, "$serverName - P2P-Legacy", fileUrl, videoHeaders))
             }
         } catch (e: Exception) {
             Log.e(tag, "[Hownetwork] Error: ${e.message}")
@@ -318,13 +426,11 @@ class Lk21Extractor(
     }
 
     // =========================================================================
-    // 3. Filesim Extractor (f16px / Cast)
-    // Port dari: Filesim.kt (CloudStream)
+    // 5. Filesim Extractor (direct link lama, f16px / Cast)
     // Flow: GET /e/{id} → JS unpack → regex file:"*.m3u8"
     // =========================================================================
     private fun extractFilesim(url: String, serverName: String): List<Video> {
         return try {
-            // Normalize ke /e/ format
             val embedUrl = url
                 .replace("/download/", "/e/")
                 .replace("/f/", "/e/")
@@ -346,10 +452,7 @@ class Lk21Extractor(
             var pageResponse = client.newCall(GET(embedUrl, filesimHeaders)).execute()
             var pageText = pageResponse.body.string()
 
-            // Follow iframe kalau ada
-            // (pakai pageText yg sudah dibaca — asJsoup() tanpa param akan re-read body
-            // yang sudah closed dan throw exception)
-            val iframeSrc = pageResponse.asJsoup(pageText)
+            val iframeSrc = pageResponse.asJsoup()
                 .selectFirst("iframe[src]")?.attr("src")
 
             if (iframeSrc != null) {
@@ -363,12 +466,11 @@ class Lk21Extractor(
                 pageText = pageResponse.body.string()
             }
 
-            // JS unpack
             val scriptData = if (pageText.contains("eval(function(p,a,c,k,e")) {
                 Log.d(tag, "[Filesim] JS unpacking...")
                 JsUnpacker.unpackAndCombine(pageText) ?: pageText
             } else {
-                pageResponse.asJsoup(pageText)
+                pageResponse.asJsoup()
                     .select("script")
                     .firstOrNull {
                         it.data().contains("sources:") ||
@@ -377,7 +479,6 @@ class Lk21Extractor(
                     }?.data() ?: pageText
             }
 
-            // Regex m3u8
             val m3u8Url =
                 Regex("""file:\s*["'](https?://[^"']*\.m3u8[^"']*)["']""").find(scriptData)?.groupValues?.get(1)
                 ?: Regex("""["'](https?://[^"']*\.m3u8[^"']*)["']""").find(scriptData)?.groupValues?.get(1)
@@ -388,7 +489,7 @@ class Lk21Extractor(
             }
 
             Log.d(tag, "[Filesim] m3u8: $m3u8Url")
-            parseM3u8(m3u8Url, embedUrl, serverName, "Cast")
+            parseM3u8(m3u8Url, embedUrl, serverName, "Cast-Legacy")
         } catch (e: Exception) {
             Log.e(tag, "[Filesim] Error: ${e.message}")
             emptyList()
@@ -449,9 +550,6 @@ class Lk21Extractor(
         }
     }
 }
-
-// JsUnpacker sudah ada di JsunPacker.kt — tidak perlu redeclare di sini
-
 
 // =========================================================================
 // JS Unpacker — unpack eval(function(p,a,c,k,e,...))
