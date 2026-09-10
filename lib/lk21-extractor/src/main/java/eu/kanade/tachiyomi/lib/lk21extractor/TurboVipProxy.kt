@@ -36,14 +36,14 @@ class TurboVipProxy(
     private val tag = "TurboVipProxy"
 
     fun ensureStarted(): Int {
-        if (!wasStarted()) {
+        if (!isProxyRunning()) {
             start(SOCKET_READ_TIMEOUT, false)
             ReportLog.log(tag, "Proxy started on port $listeningPort", LogLevel.INFO)
         }
         return listeningPort
     }
 
-    private fun wasStarted(): Boolean {
+    private fun isProxyRunning(): Boolean {
         return try {
             listeningPort != -1 && isAlive
         } catch (e: Exception) {
