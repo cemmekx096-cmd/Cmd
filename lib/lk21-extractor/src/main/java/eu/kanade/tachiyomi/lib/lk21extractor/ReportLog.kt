@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.id.lk21series
+package eu.kanade.tachiyomi.lib.lk21extractor
 
 import android.util.Log
 

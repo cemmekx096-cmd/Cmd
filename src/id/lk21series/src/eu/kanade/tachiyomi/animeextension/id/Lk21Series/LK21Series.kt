@@ -11,7 +11,8 @@ import eu.kanade.tachiyomi.animesource.model.SEpisode
 import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.ParsedAnimeHttpSource
 import eu.kanade.tachiyomi.lib.lk21extractor.Lk21Extractor
-import eu.kanade.tachiyomi.lib.lk21extractor.TurboVipSegmentInterceptor
+import eu.kanade.tachiyomi.lib.lk21extractor.LogLevel
+import eu.kanade.tachiyomi.lib.lk21extractor.ReportLog
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
 import okhttp3.Headers
@@ -62,8 +63,6 @@ class LK21Series : ConfigurableAnimeSource, ParsedAnimeHttpSource() {
                 .connectTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .readTimeout(timeoutSeconds, TimeUnit.SECONDS)
                 .writeTimeout(timeoutSeconds, TimeUnit.SECONDS)
-                // Strip PNG-hidden TS segment dari lh3.googleusercontent.com (trik TurboVIP)
-                .addInterceptor(TurboVipSegmentInterceptor())
                 .build()
         }
 

@@ -229,8 +229,14 @@ class Lk21Extractor(
                 return emptyList()
             }
 
+            // Semua request (playlist + segmen) akan di-proxy lokal, biar player
+            // apapun (termasuk mpv yang gak lewat OkHttp Kotlin) tetap kebawa
+            // Cookie/Referer yang benar DAN otomatis di-strip PNG-hidden-TS-nya.
+            val proxy = TurboVipProxy.getInstance(client, turbovipHeaders)
+
             if (!masterPlaylist.contains("#EXT-X-STREAM-INF")) {
-                return listOf(Video(masterUrl, "$serverName - TurboVIP", masterUrl, turbovipHeaders))
+                val proxiedUrl = proxy.buildPlaylistUrl(masterUrl)
+                return listOf(Video(proxiedUrl, "$serverName - TurboVIP", proxiedUrl))
             }
 
             val videos = mutableListOf<Video>()
@@ -240,8 +246,9 @@ class Lk21Extractor(
                         .find(lines[0])?.groupValues?.get(1)?.let { "${it}p" }
                         ?: "Unknown"
                     val nestedUrl = lines[1].trim()
-                    videos.add(Video(nestedUrl, "$serverName - TurboVIP $quality", nestedUrl, turbovipHeaders))
-                    Log.d(tag, "[TurboVIP] Quality: $quality -> $nestedUrl")
+                    val proxiedUrl = proxy.buildPlaylistUrl(nestedUrl)
+                    videos.add(Video(proxiedUrl, "$serverName - TurboVIP $quality", proxiedUrl))
+                    Log.d(tag, "[TurboVIP] Quality: $quality -> $proxiedUrl (asli: $nestedUrl)")
                 }
             }
             videos
