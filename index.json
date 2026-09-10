@@ -2,10 +2,10 @@
   {
     "name": "Aniyomi: LK21Series",
     "pkg": "eu.kanade.tachiyomi.animeextension.id.lk21series",
-    "apk": "aniyomi-id.lk21series-v14.8.apk",
+    "apk": "aniyomi-id.lk21series-v14.10.apk",
     "lang": "id",
-    "code": 8,
-    "version": "14.8",
+    "code": 10,
+    "version": "14.10",
     "nsfw": 0,
     "sources": [
       {
