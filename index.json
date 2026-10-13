@@ -1,5 +1,22 @@
 [
   {
+    "name": "Aniyomi: Anichin",
+    "pkg": "eu.kanade.tachiyomi.animeextension.id.anichin",
+    "apk": "aniyomi-id.anichin-v14.1.apk",
+    "lang": "id",
+    "code": 1,
+    "version": "14.1",
+    "nsfw": 0,
+    "sources": [
+      {
+        "name": "Anichin",
+        "lang": "id",
+        "id": "8649781042191808916",
+        "baseUrl": "https://anichin.moe"
+      }
+    ]
+  },
+  {
     "name": "Aniyomi: LK21Series",
     "pkg": "eu.kanade.tachiyomi.animeextension.id.lk21series",
     "apk": "aniyomi-id.lk21series-v14.10.apk",
