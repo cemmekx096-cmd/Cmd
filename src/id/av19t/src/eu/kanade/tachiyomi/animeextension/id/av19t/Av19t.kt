@@ -1,4 +1,4 @@
-package eu.kanade.tachiyomi.animeextension.all.av19t
+package eu.kanade.tachiyomi.animeextension.id.av19t
 
 import android.app.Application
 import android.content.SharedPreferences
