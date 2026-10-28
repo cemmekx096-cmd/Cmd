@@ -21,6 +21,7 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.dnsoverhttps.DnsOverHttps
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
