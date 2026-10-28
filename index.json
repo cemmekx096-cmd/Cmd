@@ -17,6 +17,23 @@
     ]
   },
   {
+    "name": "Aniyomi: AV19T",
+    "pkg": "eu.kanade.tachiyomi.animeextension.id.av19t",
+    "apk": "aniyomi-id.av19t-v14.1.apk",
+    "lang": "id",
+    "code": 1,
+    "version": "14.1",
+    "nsfw": 1,
+    "sources": [
+      {
+        "name": "AV19T",
+        "lang": "all",
+        "id": "8923102544206537145",
+        "baseUrl": "https://av19t.com"
+      }
+    ]
+  },
+  {
     "name": "Aniyomi: LK21Series",
     "pkg": "eu.kanade.tachiyomi.animeextension.id.lk21series",
     "apk": "aniyomi-id.lk21series-v14.10.apk",
