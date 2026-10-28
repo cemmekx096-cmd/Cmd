@@ -55,6 +55,7 @@ class Av19t : ConfigurableAnimeSource, AnimeHttpSource() {
 
     private val dynamicDns = object : Dns {
         @Volatile private var cachedUrl = ""
+
         @Volatile private var cachedDoh: Dns = Dns.SYSTEM
 
         override fun lookup(hostname: String): List<InetAddress> {
