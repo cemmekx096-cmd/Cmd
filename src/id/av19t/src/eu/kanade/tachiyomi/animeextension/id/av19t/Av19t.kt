@@ -15,19 +15,15 @@ import eu.kanade.tachiyomi.animesource.model.Video
 import eu.kanade.tachiyomi.animesource.online.AnimeHttpSource
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.util.asJsoup
-import okhttp3.Dns
 import okhttp3.Headers
 import okhttp3.HttpUrl.Companion.toHttpUrl
-import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import okhttp3.dnsoverhttps.DnsOverHttps
 import org.json.JSONArray
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 import uy.kohesive.injekt.Injekt
 import uy.kohesive.injekt.api.get
-import java.net.InetAddress
 
 class Av19t : ConfigurableAnimeSource, AnimeHttpSource() {
 
@@ -48,33 +44,6 @@ class Av19t : ConfigurableAnimeSource, AnimeHttpSource() {
     // Domain bisa diganti user kalau situs pindah
     override val baseUrl: String
         get() = preferences.getString(PREF_BASE, DEFAULT_BASE)!!.trim().trimEnd('/')
-
-    // ---------- DNS manual (DoH) ----------
-    // Dibaca tiap lookup, jadi perubahan di pengaturan langsung berlaku tanpa restart.
-    // Catatan: hanya untuk request extension, bukan untuk player.
-
-    private val dynamicDns = object : Dns {
-        @Volatile private var cachedUrl = ""
-
-        @Volatile private var cachedDoh: Dns = Dns.SYSTEM
-
-        override fun lookup(hostname: String): List<InetAddress> {
-            val url = preferences.getString(PREF_DOH, "").orEmpty().trim()
-            if (url.isEmpty()) return Dns.SYSTEM.lookup(hostname)
-            if (url != cachedUrl) {
-                cachedDoh = DnsOverHttps.Builder()
-                    .client(network.client)
-                    .url(url.toHttpUrl())
-                    .build()
-                cachedUrl = url
-            }
-            return cachedDoh.lookup(hostname)
-        }
-    }
-
-    override val client: OkHttpClient by lazy {
-        network.client.newBuilder().dns(dynamicDns).build()
-    }
 
     override fun headersBuilder(): Headers.Builder =
         super.headersBuilder().add("Referer", "$baseUrl/")
@@ -274,13 +243,6 @@ class Av19t : ConfigurableAnimeSource, AnimeHttpSource() {
             setDefaultValue(DEFAULT_BASE)
         }.also(screen::addPreference)
 
-        EditTextPreference(screen.context).apply {
-            key = PREF_DOH
-            title = "DNS-over-HTTPS (opsional)"
-            summary = "Contoh: https://cloudflare-dns.com/dns-query (kosong = DNS sistem)"
-            setDefaultValue("")
-        }.also(screen::addPreference)
-
         SwitchPreferenceCompat(screen.context).apply {
             key = PREF_TR
             title = "Terjemahkan judul"
@@ -298,7 +260,6 @@ class Av19t : ConfigurableAnimeSource, AnimeHttpSource() {
     companion object {
         private const val DEFAULT_BASE = "https://av19t.com"
         private const val PREF_BASE = "pref_base_url"
-        private const val PREF_DOH = "pref_doh_url"
         private const val PREF_TR = "pref_translate_title"
         private const val PREF_LANG = "pref_translate_lang"
         private const val ROWS = 24

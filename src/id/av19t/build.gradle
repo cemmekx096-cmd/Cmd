@@ -6,9 +6,3 @@ ext {
 }
 
 apply from: "$rootDir/common.gradle"
-
-// Kalau build gagal di import okhttp3.dnsoverhttps, buka komentar ini
-// dan samakan versinya dengan okhttp yang dipakai repo (cek libs.versions.toml):
-dependencies {
-    compileOnly("com.squareup.okhttp3:okhttp-dnsoverhttps:<versi-okhttp>")
-}
